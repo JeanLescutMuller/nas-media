@@ -1,0 +1,29 @@
+# Decluttarr: removes stuck or broken downloads from qBittorrent, blocklists them in Sonarr/Radarr, which then search again.
+# Deployed to ~/opt/nas-media/decluttarr.yaml; secrets come from ~/.config/nas-media/decluttarr.env (written by tools/configure.py).
+timer: 10            # minutes between checks
+log_level: INFO
+test_run: false      # true: only logs what it would remove (verified OK 2026-10-14)
+
+jobs:
+  remove_stalled: true
+  remove_failed_downloads: true
+  remove_failed_imports: true
+  remove_metadata_missing: true
+  # remove_orphans: off, it would delete the torrents added by hand in qBittorrent
+  # remove_slow: off, public torrents are often slow but fine
+  # search_missing: off, the keep-ahead job decides what to search
+
+instances:
+  sonarr:
+    - base_url: "http://127.0.0.1:8989"
+      api_key: !ENV SONARR_API_KEY
+  radarr:
+    - base_url: "http://127.0.0.1:7878"
+      api_key: !ENV RADARR_API_KEY
+
+download_clients:
+  qbittorrent:
+    - base_url: "http://127.0.0.1:8888"
+      username: !ENV QBIT_USER
+      password: !ENV QBIT_PASS
+      name: "qBittorrent"   # as in Sonarr/Radarr

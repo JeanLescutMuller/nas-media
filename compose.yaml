@@ -1,0 +1,43 @@
+# The download apps on the NAS. Deployed to ~/opt/nas-media/compose.yaml by install.sh, which passes this home's settings
+# (~/.config/nas-media/nas.env: MEDIA, PUID, PGID, TZ). Host network, like the existing Plex and qBittorrent containers:
+# every app reaches the others on 127.0.0.1, and you reach them at http://<NAS address>:<port>.
+# /media is the same folder Plex sees as /media and qBittorrent as /downloads: one mount, so imports are hardlinks.
+name: nas-media
+
+x-app: &app
+  network_mode: host
+  restart: unless-stopped
+  environment:
+    PUID: ${PUID}  # the same user and group as Plex
+    PGID: ${PGID}
+    TZ: ${TZ}
+
+services:
+  prowlarr:   # the torrent sites, port 9696
+    <<: *app
+    image: lscr.io/linuxserver/prowlarr:latest
+    volumes:
+      - ${HOME}/opt/nas-media/config/prowlarr:/config
+
+  sonarr:     # TV shows, port 8989
+    <<: *app
+    image: lscr.io/linuxserver/sonarr:latest
+    volumes:
+      - ${HOME}/opt/nas-media/config/sonarr:/config
+      - ${MEDIA}:/media
+
+  radarr:     # movies, port 7878
+    <<: *app
+    image: lscr.io/linuxserver/radarr:latest
+    volumes:
+      - ${HOME}/opt/nas-media/config/radarr:/config
+      - ${MEDIA}:/media
+
+  decluttarr: # removes stuck or broken downloads, then Sonarr/Radarr search again; no web page
+    <<: *app
+    image: ghcr.io/manimatter/decluttarr:latest
+    env_file:
+      - path: ${HOME}/.config/nas-media/decluttarr.env   # API keys, qBittorrent login: tools/configure.py
+        required: false
+    volumes:
+      - ${HOME}/opt/nas-media/decluttarr.yaml:/app/config/config.yaml:ro

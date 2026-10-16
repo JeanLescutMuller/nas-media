@@ -1,0 +1,405 @@
+<!doctype html>
+<!-- README for a human: entities only (files, arrows, status), never a rule or a tunable number (those are in AGENTS.md and src/keep_ahead.py). The folder's only README. Opens with a double-click. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nas-media</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --fg: #1d1d1f; --muted: #676770; --card: #ffffff; --line: #dcdcd6;
+    --live: #2e8b57; --partial: #d08a00; --planned: #8a8a90; --bad: #d14b3c;
+    --plex: #e08a00;   --plex-bg: #fff3dc;
+    --tv: #2f6fd6;     --tv-bg: #e6efff;
+    --movie: #b8860b;  --movie-bg: #fff8d6;
+    --site: #c2542d;   --site-bg: #fde9e1;
+    --qb: #1f8a8a;     --qb-bg: #dff5f3;
+    --job: #7a4fd0;    --job-bg: #efe8ff;
+    --folder: #8a7a5c; --folder-bg: #f1ece2;
+    --you: #d6337a;    --you-bg: #fde6f0;
+    --watched: #b9b9c0; --have: #3aa36b; --coming: #2f6fd6; --notout: #e4e4e8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141416; --fg: #ececf0; --muted: #a0a0a8; --card: #1f1f23; --line: #36363c;
+      --live: #5cc28a; --partial: #e6b04a; --planned: #8a8a90; --bad: #ef6f60;
+      --plex: #f0a830;   --plex-bg: #3a2c12;
+      --tv: #74a3ff;     --tv-bg: #1a2a48;
+      --movie: #e2c14a;  --movie-bg: #3a3315;
+      --site: #f08a63;   --site-bg: #43241a;
+      --qb: #5cc9c6;     --qb-bg: #143634;
+      --job: #b394ff;    --job-bg: #2c2148;
+      --folder: #c9b996; --folder-bg: #312b21;
+      --you: #ff79b4;    --you-bg: #45192e;
+      --watched: #5b5b63; --have: #4cc184; --coming: #74a3ff; --notout: #2c2c31;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.55 -apple-system, "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 0 16px 64px; }
+  .hero { background: linear-gradient(120deg, var(--job) 0%, var(--tv) 55%, var(--qb) 100%); color: #fff; border-radius: 0 0 18px 18px; padding: 32px 28px 26px; margin-bottom: 8px; }
+  .hero h1 { margin: 0 0 6px; font-size: 32px; letter-spacing: -0.5px; }
+  .hero p { margin: 0; opacity: .92; max-width: 760px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .chip { background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35); border-radius: 999px; padding: 4px 12px; font-size: 13px; }
+  h2 { margin: 40px 0 14px; font-size: 19px; display: flex; align-items: center; gap: 10px; }
+  h2 .n { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--fg); color: var(--bg); font-size: 13px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; overflow-x: auto; }
+  .muted { color: var(--muted); }
+  /* "What you do" cards */
+  .do { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .do > div { border-radius: 12px; padding: 14px 14px 12px; border: 1px solid var(--line); background: var(--card); border-top: 5px solid var(--c); }
+  .do .ic { font-size: 26px; line-height: 1; }
+  .do b { display: block; margin: 8px 0 2px; }
+  .do .how { background: var(--cb); border-radius: 8px; padding: 6px 9px; margin: 6px 0; font-size: 14px; }
+  .do .then { color: var(--muted); font-size: 13.5px; }
+  /* SVG */
+  svg text { fill: var(--fg); font: 13px -apple-system, system-ui, sans-serif; }
+  svg .t { font-weight: 600; font-size: 14px; }
+  svg .s { fill: var(--muted); font-size: 11.5px; }
+  svg .f { fill: var(--muted); font: 10.5px ui-monospace, Menlo, monospace; }
+  svg .lbl { fill: var(--muted); font-size: 11.5px; }
+  svg .edge { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#a); }
+  svg .num { fill: var(--fg); } svg .numt { fill: var(--bg); font-size: 11px; font-weight: 700; text-anchor: middle; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; color: var(--muted); font-size: 13px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .sq { display: inline-block; width: 14px; height: 14px; border-radius: 3px; margin-right: 6px; vertical-align: -2px; }
+  .steps { margin: 12px 0 0; padding-left: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 6px 18px; font-size: 14px; }
+  .steps li::before { content: attr(data-n); display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--fg); color: var(--bg); font-size: 11px; font-weight: 700; margin-right: 8px; }
+  pre { margin: 0; font: 12.5px/1.5 ui-monospace, Menlo, monospace; }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  code { font: 12.5px ui-monospace, Menlo, monospace; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+  .steps5 { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+  .steps5 > div { position: relative; background: var(--cb); border: 1px solid var(--line); border-left: 6px solid var(--c); border-radius: 12px; padding: 12px 12px 10px 14px; }
+  .steps5 .big { position: absolute; right: 10px; top: 2px; font-size: 34px; font-weight: 800; color: var(--c); opacity: .35; }
+  .steps5 > div > b { display: block; margin-bottom: 4px; }
+  .steps5 p { margin: 0; font-size: 13.5px; }
+  .cases td.c { text-align: center; width: 64px; }
+  .cases th:nth-child(-n+3) { text-align: center; }
+  .y, .x, .z { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font-weight: 700; font-size: 13px; }
+  .y { background: var(--have); color: #fff; } .z { background: var(--bad); color: #fff; } .x { background: var(--notout); color: var(--muted); }
+  .tt { margin: 0 0 8px; font-size: 15px; }
+  .gauge { display: flex; height: 34px; border-radius: 10px; overflow: hidden; font-size: 13px; font-weight: 600; color: #fff; }
+  .gauge div { display: grid; place-items: center; padding: 0 8px; text-align: center; }
+  footer { margin-top: 48px; color: var(--muted); font-size: 13px; }
+  a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <div class="hero">
+    <h1>📺 nas-media</h1>
+    <p>Every TV show in Plex or on your Plex Watchlist, and every movie on your Watchlist, downloads by itself on the NAS, a few episodes ahead of what we watched. Everything you do happens in Plex.</p>
+    <div class="chips"><span class="chip">TV shows + movies</span><span class="chip">driven from Plex</span><span class="chip">broken files replaced by themselves</span><span class="chip">nothing deleted behind your back</span><span class="chip">updated 2026-10-16</span></div>
+  </div>
+
+  <h2><span class="n">1</span>What you do: everything in Plex</h2>
+  <div class="do">
+    <div style="--c: var(--tv); --cb: var(--tv-bg)"><span class="ic">➕</span><b>A new show</b><div class="how">Add it to your <b style="display:inline">Watchlist</b></div><div class="then">It downloads from S01E01, or after the last episode you marked watched.</div></div>
+    <div style="--c: var(--tv); --cb: var(--tv-bg)"><span class="ic">⏭️</span><b>Start a show later on</b><div class="how">Mark the last episode you saw <b style="display:inline">as watched</b></div><div class="then">E.g. mark season 4 as watched; it starts at S05E01.</div></div>
+    <div style="--c: var(--movie); --cb: var(--movie-bg)"><span class="ic">🎬</span><b>A movie</b><div class="how">Add it to your <b style="display:inline">Watchlist</b></div><div class="then">Downloaded in its original language, as soon as it's out.</div></div>
+    <div style="--c: var(--have); --cb: var(--tv-bg)"><span class="ic">▶️</span><b>The next episodes</b><div class="how">Just watch (starting an episode is enough)</div><div class="then">The next 3 are always there; new ones arrive as soon as a site has them.</div></div>
+    <div style="--c: var(--bad); --cb: var(--site-bg)"><span class="ic">📋</span><b>A file that won't play, or is bad</b><div class="how">Add it to the list <b style="display:inline">Bad files</b></div><div class="then">Taken off the list, deleted, another release downloaded.</div></div>
+    <div style="--c: var(--you); --cb: var(--you-bg)"><span class="ic">🗑️</span><b>Free space, keep following</b><div class="how">Keep it on the Watchlist, delete it in Plex</div><div class="then">Its next season still comes when it airs.</div></div>
+    <div style="--c: var(--muted); --cb: var(--notout)"><span class="ic">✋</span><b>Stop a show</b><div class="how">Off the Watchlist <i>and</i> deleted in Plex</div><div class="then">No longer tracked: nothing more downloads.</div></div>
+  </div>
+
+  <h2><span class="n">2</span>The big picture</h2>
+  <div class="card">
+    <svg viewBox="0 0 960 465" width="100%" role="img" aria-label="You, Plex, the keep-ahead job, Sonarr, Radarr, Prowlarr, qBittorrent and the media folder">
+      <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--muted)"/></marker></defs>
+      <!-- you -->
+      <rect x="14" y="176" width="140" height="78" rx="39" style="fill: var(--you-bg); stroke: var(--you)" stroke-width="2"/>
+      <text class="t" x="84" y="210" text-anchor="middle">🙂 you</text><text class="s" x="84" y="230" text-anchor="middle">TV, phone, web</text>
+      <path class="edge" d="M130,180 L205,105"/><text class="lbl" x="18" y="128">watch · Watchlist</text><text class="lbl" x="18" y="143">Bad files · delete</text>
+      <!-- Plex -->
+      <rect x="205" y="28" width="200" height="94" rx="10" style="fill: var(--plex-bg); stroke: var(--plex)" stroke-width="2"/>
+      <text class="t" x="221" y="54">Plex :32400</text><text class="s" x="221" y="74">plays everything; knows what</text><text class="s" x="221" y="89">you watched, started, listed</text><text class="f" x="221" y="110">linuxserver_plex-1</text>
+      <circle cx="393" cy="40" r="5" style="fill: var(--live)"/>
+      <!-- media folder -->
+      <rect x="455" y="36" width="190" height="78" rx="8" style="fill: var(--folder-bg); stroke: var(--folder)" stroke-width="1.5"/>
+      <text class="t" x="469" y="60">📁 media/</text><text class="f" x="469" y="80">TV Shows/&lt;Show&gt;/Season NN/</text><text class="f" x="469" y="96">Movies/&lt;Movie (Year)&gt;/</text>
+      <path class="edge" d="M455,75 L407,75"/><text class="lbl" x="413" y="66">scans</text>
+      <!-- qBittorrent -->
+      <rect x="705" y="28" width="235" height="94" rx="10" style="fill: var(--qb-bg); stroke: var(--qb)" stroke-width="2"/>
+      <text class="t" x="721" y="54">qBittorrent :8888</text><text class="s" x="721" y="74">downloads into the landing folder</text><text class="f" x="721" y="91">media/torrents/tv|movies/</text><text class="f" x="721" y="110">qbittorrent-app-1</text>
+      <circle cx="928" cy="40" r="5" style="fill: var(--live)"/>
+      <path class="edge" d="M705,75 L647,75"/><text class="lbl" x="470" y="134">↑ when done, Sonarr / Radarr import it</text><text class="lbl" x="470" y="149">(hardlink, renamed)</text>
+      <!-- Decluttarr -->
+      <rect x="760" y="172" width="180" height="56" rx="10" style="fill: var(--qb-bg); stroke: var(--qb)" stroke-width="1.5" stroke-dasharray="5 3"/>
+      <text class="t" x="774" y="195">🧹 Decluttarr</text><text class="s" x="774" y="214">removes stuck downloads</text>
+      <circle cx="928" cy="184" r="5" style="fill: var(--live)"/>
+      <path class="edge" d="M850,172 L850,124"/>
+      <!-- keep-ahead job -->
+      <path class="edge" d="M270,122 L270,298"/><text class="lbl" x="140" y="264">every 5 min, and at</text><text class="lbl" x="140" y="279">once on a list add:</text><text class="lbl" x="140" y="294">reads Plex</text>
+      <path class="edge" d="M345,298 L345,124" style="stroke-dasharray: 5 4"/><text class="lbl" x="352" y="200">⚠ warning</text><text class="lbl" x="352" y="215">playlist</text>
+      <rect x="205" y="300" width="200" height="100" rx="10" style="fill: var(--job-bg); stroke: var(--job)" stroke-width="2.5"/>
+      <text class="t" x="221" y="326">⚙️ keep-ahead job</text><text class="s" x="221" y="346">next episodes, Watchlist,</text><text class="s" x="221" y="361">bad files, disk space</text><text class="f" x="221" y="388">src/keep_ahead.py</text>
+      <circle cx="393" cy="312" r="5" style="fill: var(--live)"/>
+      <!-- Sonarr, Radarr -->
+      <path class="edge" d="M405,330 L455,318"/><text class="lbl" x="408" y="312">wanted</text>
+      <path class="edge" d="M405,380 L455,405"/><text class="lbl" x="408" y="410">movies</text>
+      <rect x="455" y="282" width="190" height="78" rx="10" style="fill: var(--tv-bg); stroke: var(--tv)" stroke-width="2"/>
+      <text class="t" x="471" y="306">📺 Sonarr :8989</text><text class="s" x="471" y="325">TV: grabs wanted episodes</text><text class="f" x="471" y="346">nas-media-sonarr-1</text>
+      <circle cx="633" cy="294" r="5" style="fill: var(--live)"/>
+      <rect x="455" y="378" width="190" height="78" rx="10" style="fill: var(--movie-bg); stroke: var(--movie)" stroke-width="2"/>
+      <text class="t" x="471" y="402">🎬 Radarr :7878</text><text class="s" x="471" y="421">movies of the Watchlist</text><text class="f" x="471" y="442">nas-media-radarr-1</text>
+      <circle cx="633" cy="390" r="5" style="fill: var(--live)"/>
+      <path class="edge" d="M600,282 L770,124"/><text class="lbl" x="676" y="250">torrent</text>
+      <!-- Prowlarr -->
+      <path class="edge" d="M645,321 L705,335"/><path class="edge" d="M645,417 L705,370"/><text class="lbl" x="655" y="312">search</text>
+      <rect x="705" y="300" width="235" height="82" rx="10" style="fill: var(--site-bg); stroke: var(--site)" stroke-width="2"/>
+      <text class="t" x="721" y="324">🔎 Prowlarr :9696</text><text class="s" x="721" y="343">the sites: Knaben,</text><text class="s" x="721" y="358">The Pirate Bay, YTS</text>
+      <circle cx="928" cy="312" r="5" style="fill: var(--live)"/>
+      <!-- step numbers -->
+      <g><circle class="num" cx="190" cy="140" r="10"/><text class="numt" x="190" y="144">1</text></g>
+      <g><circle class="num" cx="270" cy="200" r="10"/><text class="numt" x="270" y="204">2</text></g>
+      <g><circle class="num" cx="430" cy="350" r="10"/><text class="numt" x="430" y="354">3</text></g>
+      <g><circle class="num" cx="675" cy="372" r="10"/><text class="numt" x="675" y="376">4</text></g>
+      <g><circle class="num" cx="700" cy="190" r="10"/><text class="numt" x="700" y="194">5</text></g>
+      <g><circle class="num" cx="676" cy="75" r="10"/><text class="numt" x="676" y="79">6</text></g>
+      <g><circle class="num" cx="431" cy="98" r="10"/><text class="numt" x="431" y="102">7</text></g>
+    </svg>
+    <ol class="steps">
+      <li data-n="1">You watch, add to your Watchlist, add to Bad files or delete, in Plex.</li>
+      <li data-n="2">Every 5 minutes, and at once when something is added to a list (the listener), the keep-ahead job reads Plex and plex.tv.</li>
+      <li data-n="3">It tells Sonarr which episodes are wanted, and Radarr which movies.</li>
+      <li data-n="4">Sonarr and Radarr search the sites through Prowlarr.</li>
+      <li data-n="5">They send the best torrent to qBittorrent.</li>
+      <li data-n="6">Once complete, they file it in <code>media/</code>, renamed.</li>
+      <li data-n="7">Plex sees it at once: it's on your TV.</li>
+    </ol>
+    <div class="legend">
+      <span><span class="dot" style="background: var(--live)"></span>live</span>
+      <span><span class="sq" style="background: var(--tv)"></span>TV</span><span><span class="sq" style="background: var(--movie)"></span>movies</span>
+      <span><span class="sq" style="background: var(--site)"></span>sites</span><span><span class="sq" style="background: var(--qb)"></span>downloads</span>
+      <span><span class="sq" style="background: var(--job)"></span>the keep-ahead job</span>
+    </div>
+  </div>
+
+  <h2><span class="n">3</span>The keep-ahead job: one check every 5 minutes, in 5 steps</h2>
+  <div class="steps5">
+    <div style="--c: var(--tv); --cb: var(--tv-bg)"><span class="big">1</span><b>📺 Shows</b><p>Sonarr holds exactly the shows <b>in Plex or on your Watchlist</b>. Added at once; dropped when in neither.</p></div>
+    <div style="--c: var(--have); --cb: var(--tv-bg)"><span class="big">2</span><b>▶️ Next episodes</b><p>The 3 after the last one watched or started, here or marked watched anywhere in Plex, are <b>wanted</b>; the others not. One not found for 2 days → its <b>whole season</b>.</p></div>
+    <div style="--c: var(--bad); --cb: var(--site-bg)"><span class="big">3</span><b>🕳️ Bad files</b><p>Every file is checked once for holes; holes or in the list <b>Bad files</b> → deleted, downloaded again.</p></div>
+    <div style="--c: var(--movie); --cb: var(--movie-bg)"><span class="big">4</span><b>🎬 Movies</b><p>Watchlist movies go to Radarr; once downloaded, no longer wanted (deleting is final).</p></div>
+    <div style="--c: var(--partial); --cb: var(--plex-bg)"><span class="big">5</span><b>💾 Disk</b><p>Space low → the <b>warning playlist</b> on Plex Home, then no new downloads. Nothing deleted.</p></div>
+  </div>
+  <p class="muted" style="margin: 10px 2px 0">Searches: once when an episode becomes wanted, and once a day for everything still missing. In between, Sonarr and Radarr check the sites' new releases by themselves. Stuck downloads: Decluttarr.</p>
+
+  <h2><span class="n">4</span>How fast</h2>
+  <div class="card">
+    <table>
+      <tr><th>You do, in Plex</th><th>The system sees it</th><th>Download (measured 2026-10-15)</th><th>On your TV, typically</th></tr>
+      <tr><td>➕ add a <b>show</b> to the Watchlist</td><td>within 5 min, then up to 5 min more while Sonarr reads the show</td><td>median <b>20 min</b> per episode (2 min to 2.6 h; 14 downloads)</td><td>~30 min</td></tr>
+      <tr><td>🎬 add a <b>movie</b> to the Watchlist</td><td>within 5 min</td><td><b>51–85 min</b> (4 movies, 3.7–8.5 GB)</td><td>~1 h</td></tr>
+      <tr><td>📋 add to <b>Bad files</b></td><td>within seconds (Plex tells the NAS at once): file deleted, searched at once</td><td>same as above</td><td>TV ~20 min, movie ~1 h</td></tr>
+      <tr><td>▶️ watch an episode</td><td>within 5 min</td><td>same as above</td><td>the next ones are usually already there</td></tr>
+      <tr><td>📅 a new episode airs</td><td>Sonarr checks the sites every 15 min</td><td>same as above</td><td>as soon as a site has it</td></tr>
+      <tr><td>📉 only a <b>720p</b> copy exists</td><td>the 720p waits until it is 1 day old (a 1080p came 4–12 h after airing, 3 measured)</td><td>same as above</td><td>~1 day; replaced by a 1080p if one comes</td></tr>
+      <tr><td>📦 only a <b>whole-season torrent</b> exists</td><td>2 days without a single episode → the whole season is wanted and searched</td><td>a season: 5–37 GB (one show's season 1)</td><td>~2 days</td></tr>
+    </table>
+    <p class="muted" style="margin: 10px 0 0">The download dominates; the check every 5 minutes is a small part. A download can wait in qBittorrent's queue behind others: new episodes go first.</p>
+  </div>
+
+  <h2><span class="n">5</span>Every case: watched × on disk × in Bad files</h2>
+  <div class="card">
+    <p class="muted" style="margin: 0 0 12px">“Watched” here means finished or started (Plex keeps a resume point).</p>
+    <h3 class="tt">📺 A TV episode (its show in Plex or on your Watchlist)</h3>
+    <table class="cases">
+      <tr><th>Watched</th><th>On disk</th><th>In Bad files</th><th>Possible?</th><th>Seen by the system?</th><th>What the system does</th></tr>
+      <tr><td class="c"><span class="y">✓</span></td><td class="c"><span class="y">✓</span></td><td class="c"><span class="x">✗</span></td><td>yes: the usual</td><td>yes, Plex</td><td>Counts as <b>watched up to</b> (if it's the latest); the next episodes after it are downloaded. Kept. Listed in the warning playlist when the disk is low.</td></tr>
+      <tr><td class="c"><span class="y">✓</span></td><td class="c"><span class="y">✓</span></td><td class="c"><span class="z">✓</span></td><td>yes</td><td>yes, within seconds</td><td><b>Bad file:</b> deleted, release blocked (if Sonarr downloaded it), another one downloaded, taken off the list. Stays watched.</td></tr>
+      <tr><td class="c"><span class="x">✗</span></td><td class="c"><span class="y">✓</span></td><td class="c"><span class="x">✗</span></td><td>yes</td><td>yes, Plex</td><td>Among the next ones: ready to play. Skipped earlier, or further ahead: kept, nothing to do.</td></tr>
+      <tr><td class="c"><span class="x">✗</span></td><td class="c"><span class="y">✓</span></td><td class="c"><span class="z">✓</span></td><td>yes</td><td>yes, within seconds</td><td><b>Bad file:</b> same as above.</td></tr>
+      <tr><td class="c"><span class="y">✓</span></td><td class="c"><span class="x">✗</span></td><td class="c"><span class="x">✗</span></td><td>yes: you deleted it after watching</td><td>yes: “watched” stays in Plex and on plex.tv</td><td>Nothing. Never downloaded again; the show's position stays.</td></tr>
+      <tr><td class="c"><span class="y">✓</span></td><td class="c"><span class="x">✗</span></td><td class="c"><span class="z">✓</span></td><td>rare: added, then deleted by you before the system acts (seconds)</td><td>yes</td><td>Taken off the list; nothing else (nothing to replace).</td></tr>
+      <tr><td class="c"><span class="x">✗</span></td><td class="c"><span class="x">✗</span></td><td class="c"><span class="x">✗</span></td><td>yes</td><td>yes, Sonarr knows every episode</td><td>Among the next ones: downloaded as soon as a site has it (searched at once, then Sonarr checks every 15 min). Otherwise: nothing.</td></tr>
+      <tr><td class="c"><span class="x">✗</span></td><td class="c"><span class="x">✗</span></td><td class="c"><span class="z">✓</span></td><td>rare: the same</td><td>yes</td><td>Taken off the list; nothing else.</td></tr>
+    </table>
+    <h3 class="tt" style="margin-top: 22px">🎬 A movie</h3>
+    <table class="cases">
+      <tr><th>Watched</th><th>On disk</th><th>In Bad files</th><th>Possible?</th><th>Seen by the system?</th><th>What the system does</th></tr>
+      <tr><td class="c"><span class="y">✓</span></td><td class="c"><span class="y">✓</span></td><td class="c"><span class="x">✗</span></td><td>yes</td><td>yes, Plex</td><td>Kept. Listed in the warning playlist when the disk is low.</td></tr>
+      <tr><td class="c"><span class="y">✓</span></td><td class="c"><span class="y">✓</span></td><td class="c"><span class="z">✓</span></td><td>yes</td><td>yes, within seconds</td><td><b>Bad file:</b> deleted, release blocked (if Radarr downloaded it), another one downloaded, taken off the list.</td></tr>
+      <tr><td class="c"><span class="x">✗</span></td><td class="c"><span class="y">✓</span></td><td class="c"><span class="x">✗</span></td><td>yes</td><td>yes, Plex</td><td>Kept.</td></tr>
+      <tr><td class="c"><span class="x">✗</span></td><td class="c"><span class="y">✓</span></td><td class="c"><span class="z">✓</span></td><td>yes</td><td>yes, within seconds</td><td><b>Bad file:</b> same as above.</td></tr>
+      <tr><td class="c"><span class="y">✓</span></td><td class="c"><span class="x">✗</span></td><td class="c"><span class="x">✗</span></td><td>yes: you deleted it</td><td>yes: “watched” stays in Plex and on plex.tv</td><td>Nothing: deleting a movie is final, even if it's still on your Watchlist.</td></tr>
+      <tr><td class="c"><span class="y">✓</span></td><td class="c"><span class="x">✗</span></td><td class="c"><span class="z">✓</span></td><td>rare: added, then deleted by you before the system acts</td><td>yes</td><td>Taken off the list; nothing else.</td></tr>
+      <tr><td class="c"><span class="x">✗</span></td><td class="c"><span class="x">✗</span></td><td class="c"><span class="x">✗</span></td><td>yes</td><td>yes, through your Watchlist</td><td>On the Watchlist and never downloaded: downloaded (~1 h). Downloaded before, then deleted: nothing. Not on the Watchlist: nothing.</td></tr>
+      <tr><td class="c"><span class="x">✗</span></td><td class="c"><span class="x">✗</span></td><td class="c"><span class="z">✓</span></td><td>rare: the same</td><td>yes</td><td>Taken off the list; nothing else.</td></tr>
+    </table>
+    <h3 class="tt" style="margin-top: 22px">What Plex keeps after a file is deleted</h3>
+    <table>
+      <tr><th>Marker</th><th>In the NAS's Plex</th><th>On plex.tv (your account)</th><th>Read by the system</th></tr>
+      <tr><td>watched</td><td><b>kept</b>, by the episode's or movie's ID; comes back if the file does (342 such marks today)</td><td><b>kept</b> (a deleted show: 28 of 30 episodes still watched)</td><td>yes: Plex for files on disk, plex.tv every hour for the rest</td></tr>
+      <tr><td>in the list Bad files</td><td>the system takes the item off the list when it acts</td><td>— (the list is on the NAS only)</td><td>yes, at once</td></tr>
+      <tr><td>watch history</td><td><b>kept</b>: 354 entries for deleted items, since 2025-11-29</td><td>—</td><td>no</td></tr>
+    </table>
+    <h3 class="tt" style="margin-top: 22px">The other things that change the answer</h3>
+    <table>
+      <tr><th>Factor</th><th>Effect</th></tr>
+      <tr><td>🕳️ holes in the file</td><td>like Bad files, found by the system itself (each file checked once)</td></tr>
+      <tr><td>⭐ a rating</td><td>not used: a rating given on the TV is stored on plex.tv only, never on the NAS (tested 2026-10-16)</td></tr>
+      <tr><td>▶️ half watched</td><td>a started episode counts as where you are: the next ones after it are downloaded (seen 2026-10-16: a show stopped part-way through E05 had never got E06)</td></tr>
+      <tr><td>📍 where the episode is (TV)</td><td>only the next 3 after the last one watched or started are downloaded</td></tr>
+      <tr><td>📋 on the Watchlist (TV)</td><td>deleting the show keeps it tracked; off the Watchlist <i>and</i> deleted stops it</td></tr>
+      <tr><td>💾 disk low</td><td>no new TV episode, not even a replacement; a bad movie is still replaced</td></tr>
+      <tr><td>📅 not out yet</td><td>wanted, downloaded the day a site has it</td></tr>
+      <tr><td>📉 no good 1080p</td><td>a 720p after 1 day; a 1080p replaces it if one comes (TV)</td></tr>
+      <tr><td>📦 no single episode, only the whole season</td><td>after 2 days the whole season is downloaded, if more than 100 GB are free (watched episodes of it too: they show in the warning playlist)</td></tr>
+    </table>
+  </div>
+
+  <h2><span class="n">6</span>One show, over time</h2>
+  <div class="card">
+    <svg viewBox="0 0 900 230" width="100%" role="img" aria-label="Episodes of a show over time: watched, on the NAS, downloading, not out yet">
+      <g font-size="12">
+        <text class="s" x="230" y="20">E01</text><text class="s" x="290" y="20">E02</text><text class="s" x="350" y="20">E03</text><text class="s" x="410" y="20">E04</text><text class="s" x="470" y="20">E05</text>
+        <text class="s" x="530" y="20">E06</text><text class="s" x="590" y="20">E07</text><text class="s" x="650" y="20">E08</text><text class="s" x="710" y="20">E09</text><text class="s" x="770" y="20">E10</text>
+      </g>
+      <!-- row 1: watched up to E04 -->
+      <text class="t" x="0" y="56">now</text><text class="s" x="0" y="73">watched up to E04</text>
+      <g transform="translate(222,36)">
+        <rect x="0" width="52" height="40" rx="6" style="fill: var(--watched)"/><rect x="60" width="52" height="40" rx="6" style="fill: var(--watched)"/><rect x="120" width="52" height="40" rx="6" style="fill: var(--watched)"/><rect x="180" width="52" height="40" rx="6" style="fill: var(--watched)"/>
+        <rect x="240" width="52" height="40" rx="6" style="fill: var(--have)"/><rect x="300" width="52" height="40" rx="6" style="fill: var(--have)"/><rect x="360" width="52" height="40" rx="6" style="fill: var(--have)"/>
+        <rect x="420" width="52" height="40" rx="6" style="fill: var(--notout)"/><rect x="480" width="52" height="40" rx="6" style="fill: var(--notout)"/><rect x="540" width="52" height="40" rx="6" style="fill: var(--notout)"/>
+      </g>
+      <!-- row 2: you watch E05 -->
+      <text class="t" x="0" y="122">you watch E05</text><text class="s" x="0" y="139">E08 comes</text>
+      <g transform="translate(222,102)">
+        <rect x="0" width="52" height="40" rx="6" style="fill: var(--watched)"/><rect x="60" width="52" height="40" rx="6" style="fill: var(--watched)"/><rect x="120" width="52" height="40" rx="6" style="fill: var(--watched)"/><rect x="180" width="52" height="40" rx="6" style="fill: var(--watched)"/><rect x="240" width="52" height="40" rx="6" style="fill: var(--watched)"/>
+        <rect x="300" width="52" height="40" rx="6" style="fill: var(--have)"/><rect x="360" width="52" height="40" rx="6" style="fill: var(--have)"/>
+        <rect x="420" width="52" height="40" rx="6" style="fill: none; stroke: var(--coming); stroke-width: 2.5; stroke-dasharray: 6 4"/><text x="434" y="25" style="fill: var(--coming)">⬇</text>
+        <rect x="480" width="52" height="40" rx="6" style="fill: var(--notout)"/><rect x="540" width="52" height="40" rx="6" style="fill: var(--notout)"/>
+      </g>
+      <!-- row 3: caught up -->
+      <text class="t" x="0" y="188">caught up</text><text class="s" x="0" y="205">E09 comes the day it airs</text>
+      <g transform="translate(222,168)">
+        <rect x="0" width="52" height="40" rx="6" style="fill: var(--watched)"/><rect x="60" width="52" height="40" rx="6" style="fill: var(--watched)"/><rect x="120" width="52" height="40" rx="6" style="fill: var(--watched)"/><rect x="180" width="52" height="40" rx="6" style="fill: var(--watched)"/><rect x="240" width="52" height="40" rx="6" style="fill: var(--watched)"/>
+        <rect x="300" width="52" height="40" rx="6" style="fill: var(--watched)"/><rect x="360" width="52" height="40" rx="6" style="fill: var(--watched)"/><rect x="420" width="52" height="40" rx="6" style="fill: var(--watched)"/>
+        <rect x="480" width="52" height="40" rx="6" style="fill: none; stroke: var(--coming); stroke-width: 2.5; stroke-dasharray: 6 4"/><text x="494" y="25" style="fill: var(--coming)">⬇</text>
+        <rect x="540" width="52" height="40" rx="6" style="fill: var(--notout)"/>
+      </g>
+    </svg>
+    <div class="legend">
+      <span><span class="sq" style="background: var(--watched)"></span>watched</span>
+      <span><span class="sq" style="background: var(--have)"></span>on the NAS, ready</span>
+      <span><span class="sq" style="border: 2px dashed var(--coming)"></span>downloading as soon as a site has it</span>
+      <span><span class="sq" style="background: var(--notout)"></span>not out yet</span>
+    </div>
+    <table style="margin-top: 14px">
+      <tr><th>A show you never watched in Plex starts at</th><th></th></tr>
+      <tr><td>some episodes in Plex</td><td>its first episode in Plex</td></tr>
+      <tr><td>added from the Watchlist</td><td>S01E01, or after the last episode marked watched</td></tr>
+      <tr><td>watched somewhere else</td><td>mark that episode as watched in Plex</td></tr>
+    </table>
+  </div>
+
+  <h2><span class="n">7</span>A bad file</h2>
+  <div class="card">
+    <svg viewBox="0 0 960 250" width="100%" role="img" aria-label="A bad file is deleted and downloaded again">
+      <rect x="10" y="20" width="200" height="50" rx="10" style="fill: var(--site-bg); stroke: var(--bad)" stroke-width="2"/><text class="t" x="24" y="42">🕳️ holes</text><text class="s" x="24" y="60">missing pieces, found by the job</text>
+      <rect x="10" y="90" width="200" height="50" rx="10" style="fill: var(--site-bg); stroke: var(--bad)" stroke-width="2"/><text class="t" x="24" y="112">📋 in the list Bad files</text><text class="s" x="24" y="130">plays badly, wrong language…</text>
+      <path class="edge" d="M210,45 L270,105"/><path class="edge" d="M210,115 L268,115"/>
+      <rect x="270" y="88" width="150" height="54" rx="10" style="fill: var(--job-bg); stroke: var(--job)" stroke-width="2"/><text class="t" x="286" y="112">🗑️ file deleted</text><text class="s" x="286" y="130">by the job</text>
+      <path class="edge" d="M420,115 L470,115"/>
+      <polygon points="560,70 650,115 560,160 470,115" style="fill: var(--card); stroke: var(--muted)" stroke-width="1.5"/><text x="560" y="111" text-anchor="middle" class="s">downloaded by</text><text x="560" y="126" text-anchor="middle" class="s">Sonarr / Radarr?</text>
+      <path class="edge" d="M620,100 L690,55"/><text class="lbl" x="640" y="66">yes</text>
+      <path class="edge" d="M620,130 L690,175"/><text class="lbl" x="640" y="172">no</text>
+      <rect x="690" y="22" width="260" height="60" rx="10" style="fill: var(--tv-bg); stroke: var(--tv)" stroke-width="2"/><text class="t" x="704" y="46">🚫 that release is blocked</text><text class="s" x="704" y="65">they take another one</text>
+      <rect x="690" y="148" width="260" height="60" rx="10" style="fill: var(--qb-bg); stroke: var(--qb)" stroke-width="2"/><text class="t" x="704" y="172">🔁 searched again</text><text class="s" x="704" y="191">(manual download: old torrent cleared)</text>
+      <text class="lbl" x="270" y="226">Then it stays wanted until a new file is in, and that file is checked too.</text><text class="lbl" x="270" y="243">Seen 2026-10-15: an episode whose only release (1080p, no 720p) has holes in every copy.</text>
+    </svg>
+  </div>
+
+  <h2><span class="n">8</span>Disk space: you decide what goes</h2>
+  <div class="card">
+    <div class="gauge">
+      <div style="flex: 5; background: var(--live)">✅ plenty of space: downloads go on</div>
+      <div style="flex: 3; background: var(--partial)">⚠ warning playlist on Plex Home</div>
+      <div style="flex: 2; background: var(--bad)">⏸ nothing new downloaded</div>
+    </div>
+    <p class="muted" style="margin: 10px 0 0">The warning is a playlist in Plex Home's <b>Recent Playlists</b> row, named "⚠ NAS almost full: … GB left": what you watched, biggest files first. Delete what you don't want to keep, in Plex. Nothing is ever deleted automatically, except bad files. Thresholds: <code>src/keep_ahead.py</code>, first lines.</p>
+  </div>
+
+  <h2><span class="n">9</span>Where things are</h2>
+  <div class="grid" style="grid-template-columns: 1fr">
+    <div class="card"><pre><b>NAS</b>  MEDIA/ (in nas.env)            (Plex, Sonarr, Radarr: /media · qBittorrent: /downloads)
+├── TV Shows/&lt;Show&gt;/Season NN/        Plex's TV library
+├── Movies/&lt;Movie (Year)&gt;/            Plex's Movies library
+├── torrents/tv/, torrents/movies/    landing folders
+└── …                                 manual downloads from qBittorrent
+
+<b>NAS</b>  ~/opt/nas-media/                deployed by install.sh
+├── compose.yaml, decluttarr.yaml     the apps
+├── keep_ahead.py, entrypoint.sh      the keep-ahead job
+├── listen.py                         the listener
+├── config/&lt;app&gt;/                     each app's settings
+├── state/memory.json                 files checked, bad files, where each show is, plex.tv's watched state
+└── units/                            the trigger NAME, the service NAME.listen (NAME in nas.env)
+
+<b>NAS</b>  ~/.config/nas-media/*.env       nas.env: this home's settings · apps.env, qbit.env: logins</pre></div>
+    <div class="card"><pre><b>Mac</b>  ~/dev/nas-media/                the code (git, edited here only)
+├── README.html                       this page
+├── AGENTS.md                         rules, words, commands
+├── compose.yaml                      Sonarr, Radarr, Prowlarr, Decluttarr
+├── decluttarr.yaml                   what Decluttarr removes
+├── install.sh, uninstall.sh          deploy to / remove from the NAS
+├── nas.env.example                   this home's settings: copy to the NAS, fill in
+├── src/keep_ahead.py                 the keep-ahead job: one check in five steps
+├── src/entrypoint.sh                 run by job-runner
+├── src/listen.py                     the listener: an addition to a list in Plex → a check at once
+└── tools/configure.py                every app's settings (languages too)</pre></div>
+  </div>
+
+  <h2><span class="n">10</span>Components</h2>
+  <div class="card">
+    <table>
+      <tr><th>Component</th><th>Address (home network)</th><th>Files</th><th>Status</th></tr>
+      <tr><td>Plex</td><td>http://&lt;NAS address&gt;:32400/web</td><td>UGREEN Docker (before this project)</td><td><span class="dot" style="background: var(--live)"></span>live</td></tr>
+      <tr><td>qBittorrent</td><td>http://&lt;NAS address&gt;:8888</td><td>UGREEN App Center (before this project). Shares nothing once a download is complete; Sonarr and Radarr then remove the torrent and delete its landing-folder copy (no trash)</td><td><span class="dot" style="background: var(--live)"></span>live</td></tr>
+      <tr><td>Sonarr · Radarr · Prowlarr</td><td>:8989 · :7878 · :9696</td><td><code>compose.yaml</code>, set by <code>tools/configure.py</code></td><td><span class="dot" style="background: var(--live)"></span>live</td></tr>
+      <tr><td>Decluttarr (no web page)</td><td>—</td><td><code>compose.yaml</code>, <code>decluttarr.yaml</code></td><td><span class="dot" style="background: var(--live)"></span>live</td></tr>
+      <tr><td>keep-ahead job</td><td>—</td><td><code>src/keep_ahead.py</code>, <code>src/entrypoint.sh</code>; trigger <code>NAME</code> (every 5 min)</td><td><span class="dot" style="background: var(--live)"></span>live since 2026-10-15. Status and log on the NAS: <code>~/opt/job-runner/status/nas-media/</code>, <code>~/opt/job-runner/logs/nas-media/</code>; not on the job-runner dashboard (the NAS can't reach the VM)</td></tr>
+      <tr><td>listener (no web page)</td><td>—</td><td><code>src/listen.py</code>; service <code>NAME.listen</code> (all the time, 21 MB RAM): something added to a list in Plex starts the check at once (the TV's addition reached the NAS at once, 2026-10-16)</td><td><span class="dot" style="background: var(--live)"></span>live</td></tr>
+    </table>
+    <p class="muted" style="margin: 10px 0 0">Login of Sonarr, Radarr, Prowlarr: <code>ssh &lt;nas&gt; 'cat ~/.config/nas-media/apps.env'</code></p>
+  </div>
+
+  <h2><span class="n">11</span>Where it stands (2026-10-16, project closed)</h2>
+  <div class="grid">
+    <div class="card">
+      <h3 class="tt">✅ Live, nothing to do</h3>
+      <table>
+        <tr><td>Tracked shows</td><td>16 (in Plex or on the Watchlist)</td></tr>
+        <tr><td>Your Watchlist</td><td>3 shows</td></tr>
+        <tr><td>Library checked for holes</td><td>every file; the 18 broken ones of 2026-10-15 replaced</td></tr>
+        <tr><td>Free space</td><td>147 GB (warning playlist under 100 GB)</td></tr>
+        <tr><td>Sharing</td><td>none once a download is complete</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3 class="tt">⏳ Waiting by itself</h3>
+      <table>
+        <tr><td>one episode</td><td>its only release has holes (blocked); searched again every day, 720p accepted</td></tr>
+        <tr><td>Status on the phone dashboard</td><td>not shown: the NAS can't reach the VM (job-runner project)</td></tr>
+      </table>
+      <h3 class="tt" style="margin-top: 14px">🛠️ If something looks wrong</h3>
+      <table>
+        <tr><td>the last checks</td><td><code>ssh &lt;nas&gt; 'tail -3 ~/opt/job-runner/status/nas-media/*.tsv'</code></td></tr>
+        <tr><td>what the last check did</td><td><code>ssh &lt;nas&gt; 'tail -25 "$(ls -t ~/opt/job-runner/logs/nas-media/*/*.log | head -1)"'</code></td></tr>
+        <tr><td>downloads</td><td>qBittorrent http://&lt;NAS address&gt;:8888 · Sonarr :8989 · Radarr :7878</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <p class="muted" style="margin-top: 28px">In this page: <code>&lt;nas&gt;</code> is the NAS's ssh host, <code>&lt;NAS address&gt;</code> its address on the home network; <code>MEDIA</code> and <code>NAME</code> come from <code>~/.config/nas-media/nas.env</code> on the NAS (example: <code>nas.env.example</code>).</p>
+
+  <footer>Rules, words and commands for agents: <a href="AGENTS.md">AGENTS.md</a> · The job's own numbers: first lines of <code>src/keep_ahead.py</code></footer>
+</main>
+</body>
+</html>
