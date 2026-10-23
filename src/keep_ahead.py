@@ -217,6 +217,11 @@ def shows(d_mem, l_watch, low, roomy, daily):
                 d["path"] = plex(f"/library/metadata/{d_plex[tvdb]['ratingKey']}")["Metadata"][0]["Location"][0]["path"]
             sonarr("POST", "/series", d)
             print(f"  {d['title']} ({d.get('year')}): tracked{', folder ' + d['path'] if tvdb in d_plex else ''}")
+    # Sonarr turns off a show added with no episode wanted: its check of new releases and its daily search then skip all its
+    # episodes (found 2026-10-23: an episode wanted before it aired was never downloaded). Turned back on here
+    l_show_off = [s["id"] for s in d_have.values() if not s["monitored"]]
+    if l_show_off:
+        sonarr("PUT", "/series/editor", {"seriesIds": l_show_off, "monitored": True})
     if d_plex and l_watch is not None:   # an empty Plex or an unreadable Watchlist is a hiccup, not "stop everything"
         for tvdb in set(d_have) - s_keep:
             print(f"  {d_have[tvdb]['title']}: in neither Plex nor the Watchlist, no longer tracked")
