@@ -3,7 +3,8 @@
 #   KEEP_AHEAD_DRY=1 python3 keep_ahead.py     says what it would do, changes nothing
 # One check:
 #   1. Sonarr holds exactly the shows in Plex or on your Plex Watchlist (and those with a bad file being replaced).
-#   2. Per show: the AHEAD episodes after the last one watched are wanted (= monitored in Sonarr), the others not. One of them
+#   2. Per show: the AHEAD episodes after the last one watched are wanted (= monitored in Sonarr), the others not; specials
+#      too when they air during or after the season being watched, until watched. One of them
 #      out but not found for 2 days: its whole season is wanted (a whole-season torrent), while space allows.
 #   3. Bad files (holes; added to the Plex list "Bad files") are deleted and downloaded again.
 #   4. Movies on your Watchlist go to Radarr; a movie stops being wanted once downloaded (deleting it in Plex is final).
@@ -236,7 +237,8 @@ def shows(d_mem, l_watch, low, roomy, daily):
     l_search, l_on, l_off, l_season, d_missing, d_season = [], [], [], [], {}, {}
     for s in sonarr("GET", "/series"):
         tvdb, k_of = s["tvdbId"], lambda e: (e["seasonNumber"], e["episodeNumber"])
-        l_eps = sorted((e for e in sonarr("GET", f"/episode?seriesId={s['id']}&includeEpisodeFile=true") if e["seasonNumber"] > 0), key=k_of)
+        l_all = sorted(sonarr("GET", f"/episode?seriesId={s['id']}&includeEpisodeFile=true"), key=k_of)
+        l_eps, l_specials = [e for e in l_all if e["seasonNumber"] > 0], [e for e in l_all if e["seasonNumber"] == 0]
         if not l_eps:
             continue                                    # just added: Sonarr is still reading it
         d_plex_eps = d_eps.get(tvdb, {})
@@ -253,6 +255,12 @@ def shows(d_mem, l_watch, low, roomy, daily):
         d_mem["after"][str(tvdb)] = code(l_eps[i_last]) if i_last >= 0 else "S00E00"
         l_window = l_eps[i_last + 1: i_last + 1 + AHEAD]
         s_window = {e["id"] for e in l_window}
+        # specials: wanted when they air during or after the season being watched, until watched (the user, 2026-10-17)
+        n_season = (l_window[0] if l_window else l_eps[max(i_last, 0)])["seasonNumber"]
+        start = min((e["airDate"] for e in l_eps if e["seasonNumber"] == n_season and e.get("airDate")), default=None)
+        l_special = [e for e in l_specials if start and (e.get("airDate") or "") >= start
+                     and not d_plex_eps.get(k_of(e), {}).get("viewCount")]
+        s_window |= {e["id"] for e in l_special}
         # whole season: an episode among them wanted and out, but not found for PACK_AFTER_S (no single release; Sonarr takes a
         # whole-season torrent only when every episode in it is wanted) → its whole season is wanted and searched, while free space
         # is above ALERT_FREE_GB; until that episode is here or watched
@@ -269,7 +277,7 @@ def shows(d_mem, l_watch, low, roomy, daily):
         else:
             pack = None                                     # that episode is here, or watched
 
-        for e in l_eps:
+        for e in l_eps + l_specials:
             # 3. bad files: every file Plex plays is checked once for holes; an episode in the list "Bad files" is replaced
             l_bad = bad_files(d_mem, d_plex_eps.get(k_of(e), {}))
             for path, why in l_bad:
@@ -294,7 +302,8 @@ def shows(d_mem, l_watch, low, roomy, daily):
 
         have = sum(e["hasFile"] or k_of(e) in d_plex_eps for e in l_window)
         win_txt = f"{code(l_window[0])}–{code(l_window[-1])}" if l_window else "none (caught up, waiting for new episodes)"
-        print(f"{s['title']}: watched up to {code(l_eps[i_last]) if i_last >= 0 else 'nothing'} · wanted {win_txt} · {have}/{len(l_window)} here")
+        print(f"{s['title']}: watched up to {code(l_eps[i_last]) if i_last >= 0 else 'nothing'} · wanted {win_txt} · {have}/{len(l_window)} here"
+              + "".join(f" · special {code(e)} wanted" for e in l_special))
 
     if l_on:
         sonarr("PUT", "/episode/monitor", {"episodeIds": l_on, "monitored": True})
